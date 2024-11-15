@@ -3,8 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 from translate import Translator
-from datetime import datetime
-import re
+import time
 
 # Set page configuration
 st.set_page_config(
@@ -13,51 +12,17 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS to improve appearance
-st.markdown("""
-    <style>
-    .stButton>button {
-        width: 100%;
-        background-color: #FF4B4B;
-        color: white;
-    }
-    .stTitle {
-        color: #FF4B4B;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-# Initialize translation cache
-if 'translation_cache' not in st.session_state:
-    st.session_state.translation_cache = {}
-
-# Function to translate Gujarati to English with caching
-def translate_text(text, dest='en'):
-    if text in st.session_state.translation_cache:
-        return st.session_state.translation_cache[text]
-    
-    translator = Translator(to_lang=dest)
+# Function to translate text with delay to avoid rate limiting
+def translate_text(text, from_lang='gu', to_lang='en'):
     try:
-        translation = translator.translate(text)
-        st.session_state.translation_cache[text] = translation
-        return translation
+        translator = Translator(from_lang=from_lang, to_lang=to_lang)
+        # Add delay to avoid translation service rate limits
+        time.sleep(0.5)
+        return translator.translate(text)
     except:
         return text
 
-# Function to clean text
-def clean_text(text):
-    # Remove extra whitespace and newlines
-    text = re.sub(r'\s+', ' ', text).strip()
-    return text
-
 # Function to scrape Divya Bhaskar
-def scrape_divya_bhaskar(search_term):
+def scrape_divya_bhaskar(search_term, max_articles=5):
     url = f"https://www.divyabhaskar.co.in/search?q={search_term}"
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
-    
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        soup = BeautifulSoup(response.content, 'html.parser')
-        
+
